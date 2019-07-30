@@ -10,7 +10,7 @@
 
 const NSInteger timeoutIntervel = 10;
 
-static NSString *const baseUrl = @"";
+static NSString *const baseUrl = HouEMainUrl;
 
 static YYNetworkManager *_networkManager = nil;
 
@@ -19,6 +19,7 @@ static YYNetworkManager *_networkManager = nil;
 @end
 
 @implementation YYNetworkManager
+
 
 + (instancetype)shareManager
 {
@@ -59,37 +60,37 @@ static YYNetworkManager *_networkManager = nil;
     return self;
 }
 
-// 防止外部调用alloc 或者 new
-+ (instancetype)allocWithZone:(struct _NSZone *)zone
-{
-    return [YYNetworkManager shareManager];
-}
-
-- (void)GetWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(id))success failure:(void(^)(NSError *error))failure
+- (void)GETWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure
 {
     [self GET:urlstring parameters:params progress:^(NSProgress * _Nonnull downloadProgress) {
         
         NSLog(@"uploadProgress======%lld",downloadProgress.completedUnitCount/downloadProgress.totalUnitCount);
 
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        success(responseObject);
+        if (responseObject) {
+            id result = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingMutableContainers error:nil];
+            success(task,result);
+        }
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        failure(error);
+        failure(task,error);
     }];
 }
 
-- (void)PostWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(id))success failure:(void(^)(NSError *error))failure
+- (void)POSTWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure
 {
     [self POST:urlstring parameters:params progress:^(NSProgress * _Nonnull uploadProgress) {
         NSLog(@"uploadProgress======%lld",uploadProgress.completedUnitCount/uploadProgress.totalUnitCount);
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        success(responseObject);
+        if (responseObject) {
+            id result = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingMutableContainers error:nil];
+            success(task,result);
+        }
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        failure(error);
+        failure(task,error);
     }];
 }
 
-- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(void(^)(id))success failure:(void(^)(NSError *error))failure
+- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure
 {
     [self POST:urlstring parameters:params constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
         
@@ -105,9 +106,13 @@ static YYNetworkManager *_networkManager = nil;
     } progress:^(NSProgress * _Nonnull uploadProgress) {
         NSLog(@"uploadProgress======%lld",uploadProgress.completedUnitCount/uploadProgress.totalUnitCount);
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        success(responseObject);
+        if (responseObject) {
+            id result = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingMutableContainers error:nil];
+            success(task,result);
+        }
+        
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        failure(error);
+        failure(task,error);
     }];
 }
 
@@ -126,5 +131,33 @@ static YYNetworkManager *_networkManager = nil;
     } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
         failure(error);
     }];
+}
+
+- (void)cancelAllNetworkRequest
+{
+    [self.operationQueue cancelAllOperations];
+}
+
+- (void)cancelNetowrkRequestMethod:(NSString *)method requestUrl:(NSString *)urStr
+{
+    NSError *error = nil;
+    /**根据请求的类型 以及 请求的url创建一个NSMutableURLRequest---通过该url去匹配请求队列中是否有该url,如果有的话 那么就取消该请求*/
+
+    NSString *preCancelUrl = [[[self.requestSerializer requestWithMethod:method URLString:urStr parameters:nil error:&error] URL] path];
+    
+    NSArray *operations = self.operationQueue.operations;
+    for (NSOperation *operation in operations) {
+        // 如果是请求队列
+        if ([operation isKindOfClass:[NSURLSessionTask class]]) {
+            // 请求类型的匹配
+            BOOL hasMatchRequestType = [method isEqualToString:[[(NSURLSessionTask *)operation currentRequest] HTTPMethod]];
+            
+            BOOL hasMatchRequestUrl = [preCancelUrl isEqualToString:[[[(NSURLSessionTask *)operation currentRequest] URL] path]];
+            
+            if (hasMatchRequestType && hasMatchRequestUrl) {
+                [operation cancel];
+            }
+        }
+    }
 }
 @end

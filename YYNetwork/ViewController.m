@@ -8,6 +8,8 @@
 
 #import "ViewController.h"
 
+#define HEHomeShufflingUrl @"/Api/NewIndex/carouseImageList"
+
 @interface ViewController ()
 
 @end
@@ -15,8 +17,21 @@
 @implementation ViewController
 
 - (void)viewDidLoad {
+    
     [super viewDidLoad];
-    // Do any additional setup after loading the view, typically from a nib.
+    
+
+    [[YYNetworkManager shareManager] POSTWithUrlString:HEHomeShufflingUrl parameters:@{@"uid":@"0"} success:^(NSURLSessionDataTask *task, id result) {
+        
+    } failure:^(NSURLSessionDataTask *task, NSError *error) {
+        
+    }];
+    
+//    [[YYNetworkManager shareManager] POSTWithUrlString:[NSString stringWithFormat:@"%@%@",HouEMainUrl,HEHomeShufflingUrl] parameters:@{@"uid":@"0"} success:^(id responseObject) {
+//
+//    } failure:^(NSError *error) {
+//
+//    }];
 }
 
 

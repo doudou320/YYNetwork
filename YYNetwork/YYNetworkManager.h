@@ -7,8 +7,12 @@
 //
 
 #import <AFNetworking.h>
-
 #import "YYParameterModel.h"
+
+typedef NS_OPTIONS(NSInteger, YYNetworkRequestMethod){
+    YYNetworkRequestGET = 0, // GET请求
+    YYNetworkRequestPOST, // POST请求
+};
 
 @interface YYNetworkManager : AFHTTPSessionManager
 
@@ -25,7 +29,7 @@
  *  @param success      下载文件成功的回调
  *  @param failure      下载文件失败的回调
  */
-- (void)GetWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(id))success failure:(void(^)(NSError *error))failure;
+- (void)GETWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure;
 
 /**
  *  POST请求
@@ -35,7 +39,7 @@
  *  @param success      下载文件成功的回调
  *  @param failure      下载文件失败的回调
  */
-- (void)PostWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(id))success failure:(void(^)(NSError *error))failure;
+- (void)POSTWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure;
 
 /**
  *  上传单张图片
@@ -46,7 +50,7 @@
  *  @param success      下载文件成功的回调
  *  @param failure      下载文件失败的回调
  */
-- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(void(^)(id))success failure:(void(^)(NSError *error))failure;
+- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure;
 
 /**
  *  文件下载
@@ -57,6 +61,21 @@
  *  @param progress     下载文件的进度显示
  */
 - (void)downloadWithUrl:(NSString *)urlstring progress:(void(^)(NSProgress *downloadProgress))progress success:(void(^)(id))success failure:(void(^)(NSError *error))failure;
+
+/**
+ *  取消所有网络请求
+ */
+- (void)cancelAllNetworkRequest;
+
+
+/**
+ *  取消指定的url请求
+ *
+ *  @param method 该请求的请求类型
+ *  @param urStr  该请求的完整url
+ */
+
+- (void)cancelNetowrkRequestMethod:(NSString *)method requestUrl:(NSString *)urStr;
 
 @end
 
