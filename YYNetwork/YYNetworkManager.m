@@ -44,6 +44,17 @@ static YYNetworkManager *_networkManager = nil;
         self.requestSerializer.cachePolicy = NSURLRequestReloadIgnoringLocalCacheData;
         
         self.responseSerializer = [AFHTTPResponseSerializer serializer];
+        
+//        self.responseSerializer = [AFJSONResponseSerializer serializer];//返回格式 JSON
+        // 返回格式
+        // AFHTTPResponseSerializer           二进制格式
+        // AFJSONResponseSerializer           JSON
+        // AFXMLParserResponseSerializer      XML,只能返回XMLParser,还需要自己通过代理方法解析
+        // AFXMLDocumentResponseSerializer (Mac OS X)
+        // AFPropertyListResponseSerializer   PList
+        // AFImageResponseSerializer          Image
+        // AFCompoundResponseSerializer       组合
+
         /*
          *   设置请求超时的时间
          */
@@ -60,7 +71,7 @@ static YYNetworkManager *_networkManager = nil;
     return self;
 }
 
-- (void)GETWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure
+- (void)GETWithUrlString:(NSString *)urlstring parameters:(id)params success:(SuccessBlock)success failure:(FailureBlock)failure
 {
     [self GET:urlstring parameters:params progress:^(NSProgress * _Nonnull downloadProgress) {
         
@@ -76,7 +87,7 @@ static YYNetworkManager *_networkManager = nil;
     }];
 }
 
-- (void)POSTWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure
+- (void)POSTWithUrlString:(NSString *)urlstring parameters:(id)params success:(SuccessBlock)success failure:(FailureBlock)failure
 {
     [self POST:urlstring parameters:params progress:^(NSProgress * _Nonnull uploadProgress) {
         NSLog(@"uploadProgress======%lld",uploadProgress.completedUnitCount/uploadProgress.totalUnitCount);
@@ -90,7 +101,19 @@ static YYNetworkManager *_networkManager = nil;
     }];
 }
 
-- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure
+- (void)PUTWithUrlString:(NSString *)urlstring parameters:(id)params success:(SuccessBlock)success failure:(FailureBlock)failure
+{
+    [self PUT:urlstring parameters:params success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
+        if (responseObject) {
+            id result = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingMutableContainers error:nil];
+            success(task,result);
+        }
+    } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        failure(task,error);
+    }];
+}
+
+- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(SuccessBlock)success failure:(FailureBlock)failure
 {
     [self POST:urlstring parameters:params constructingBodyWithBlock:^(id<AFMultipartFormData>  _Nonnull formData) {
         
@@ -116,7 +139,7 @@ static YYNetworkManager *_networkManager = nil;
     }];
 }
 
-- (void)downloadWithUrl:(NSString *)urlstring progress:(void(^)(NSProgress *downloadProgress))progress success:(void(^)(id))success failure:(void(^)(NSError *error))failure
+- (void)downloadWithUrl:(NSString *)urlstring progress:(void(^)(NSProgress *downloadProgress))progress success:(SuccessBlock)success failure:(FailureBlock)failure
 {
     [self downloadTaskWithRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:urlstring]] progress:^(NSProgress * _Nonnull downloadProgress) {
         
@@ -124,12 +147,12 @@ static YYNetworkManager *_networkManager = nil;
             progress(downloadProgress);
         }
     } destination:^NSURL * _Nonnull(NSURL * _Nonnull targetPath, NSURLResponse * _Nonnull response) {
-        success(response);
+        success(nil,response);
         NSString *caches = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
         NSString *fulPath = [caches stringByAppendingString:response.suggestedFilename];
         return [NSURL URLWithString:fulPath];
     } completionHandler:^(NSURLResponse * _Nonnull response, NSURL * _Nullable filePath, NSError * _Nullable error) {
-        failure(error);
+        failure(nil,error);
     }];
 }
 
@@ -159,5 +182,23 @@ static YYNetworkManager *_networkManager = nil;
             }
         }
     }
+}
+
+- (void)monitoringNetworkStatus:(NetworkStatusBlock)networkStatus
+{
+    
+    AFNetworkReachabilityManager *manager = [AFNetworkReachabilityManager sharedManager];
+    [manager startMonitoring];
+    
+    [manager setReachabilityStatusChangeBlock:^(AFNetworkReachabilityStatus status) {
+        networkStatus(status);
+    }];
+}
+
+
+- (void)stopmonitoringNetworkStatus
+{
+    AFNetworkReachabilityManager *manager = [AFNetworkReachabilityManager sharedManager];
+    [manager stopMonitoring];
 }
 @end

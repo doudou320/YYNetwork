@@ -12,7 +12,14 @@
 typedef NS_OPTIONS(NSInteger, YYNetworkRequestMethod){
     YYNetworkRequestGET = 0, // GET请求
     YYNetworkRequestPOST, // POST请求
+    YYNetworkRequestPUT, // PUT请求
 };
+
+typedef void(^SuccessBlock)(NSURLSessionTask *task, id result);
+
+typedef void(^FailureBlock)(NSURLSessionTask *task, NSError *error);
+
+typedef void(^NetworkStatusBlock)(AFNetworkReachabilityStatus status);
 
 @interface YYNetworkManager : AFHTTPSessionManager
 
@@ -29,7 +36,8 @@ typedef NS_OPTIONS(NSInteger, YYNetworkRequestMethod){
  *  @param success      下载文件成功的回调
  *  @param failure      下载文件失败的回调
  */
-- (void)GETWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure;
+- (void)GETWithUrlString:(NSString *)urlstring parameters:(id)params success:(SuccessBlock)success failure:(FailureBlock)failure;
+
 
 /**
  *  POST请求
@@ -39,7 +47,18 @@ typedef NS_OPTIONS(NSInteger, YYNetworkRequestMethod){
  *  @param success      下载文件成功的回调
  *  @param failure      下载文件失败的回调
  */
-- (void)POSTWithUrlString:(NSString *)urlstring parameters:(id)params success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure;
+- (void)POSTWithUrlString:(NSString *)urlstring parameters:(id)params success:(SuccessBlock)success failure:(FailureBlock)failure;
+
+
+/**
+ *  PUT请求
+ *
+ *  @param urlstring    请求的url
+ *  @param params       请求的参数
+ *  @param success      下载文件成功的回调
+ *  @param failure      下载文件失败的回调
+ */
+- (void)PUTWithUrlString:(NSString *)urlstring parameters:(id)params success:(SuccessBlock)success failure:(FailureBlock)failure;
 
 /**
  *  上传单张图片
@@ -50,7 +69,8 @@ typedef NS_OPTIONS(NSInteger, YYNetworkRequestMethod){
  *  @param success      下载文件成功的回调
  *  @param failure      下载文件失败的回调
  */
-- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(void(^)(NSURLSessionDataTask *task,id result))success failure:(void(^)(NSURLSessionDataTask *task,NSError *error))failure;
+- (void)uploadImageWithUrlString:(NSString *)urlstring parameters:(id)params uploadParameter:(YYParameterModel *)uploadParams success:(SuccessBlock)success failure:(FailureBlock)failure;
+
 
 /**
  *  文件下载
@@ -60,7 +80,8 @@ typedef NS_OPTIONS(NSInteger, YYNetworkRequestMethod){
  *  @param failure      下载文件失败的回调
  *  @param progress     下载文件的进度显示
  */
-- (void)downloadWithUrl:(NSString *)urlstring progress:(void(^)(NSProgress *downloadProgress))progress success:(void(^)(id))success failure:(void(^)(NSError *error))failure;
+- (void)downloadWithUrl:(NSString *)urlstring progress:(void(^)(NSProgress *downloadProgress))progress success:(SuccessBlock)success failure:(FailureBlock)failure;
+
 
 /**
  *  取消所有网络请求
@@ -74,8 +95,17 @@ typedef NS_OPTIONS(NSInteger, YYNetworkRequestMethod){
  *  @param method 该请求的请求类型
  *  @param urStr  该请求的完整url
  */
-
 - (void)cancelNetowrkRequestMethod:(NSString *)method requestUrl:(NSString *)urStr;
+
+/**
+ *  监听网络状态
+ */
+- (void)monitoringNetworkStatus:(NetworkStatusBlock)networkStatus;
+
+/**
+ *  取消监听网络状态
+ */
+- (void)stopmonitoringNetworkStatus;
 
 @end
 
